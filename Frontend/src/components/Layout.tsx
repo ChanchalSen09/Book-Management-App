@@ -1,0 +1,45 @@
+import { Outlet, Link } from "react-router-dom";
+import AppBar from "@mui/material/AppBar";
+import Box from "@mui/material/Box";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import Container from "@mui/material/Container";
+import Button from "@mui/material/Button";
+
+const Navbar = () => (
+  <AppBar position="static">
+    <Toolbar>
+      <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+        Book Management App
+      </Typography>
+      <Button color="inherit" component={Link} to="/">
+        Dashboard
+      </Button>
+      <Button color="inherit" component={Link} to="/add">
+        Add Book
+      </Button>
+    </Toolbar>
+  </AppBar>
+);
+
+const AppFooter = () => (
+  <Box
+    component="footer"
+    sx={{ bgcolor: "background.paper", py: 2, mt: 4, textAlign: "center" }}>
+    <Typography variant="body2" color="text.secondary">
+      &copy; {new Date().getFullYear()} Book Management App
+    </Typography>
+  </Box>
+);
+
+const Layout = () => (
+  <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <Navbar />
+    <Container maxWidth="lg" component="main" sx={{ flex: 1, py: 3 }}>
+      <Outlet />
+    </Container>
+    <AppFooter />
+  </Box>
+);
+
+export default Layout;
