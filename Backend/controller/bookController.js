@@ -1,4 +1,4 @@
-const Book = require("../models/Book");
+const Book = require("../model/book");
 
 // @desc    Get all books
 // @route   GET /api/books
