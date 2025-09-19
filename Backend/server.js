@@ -10,7 +10,7 @@ connectDB();
 
 const app = express();
 
-const allowedOrigins = ["http://localhost:5173"];
+const allowedOrigins = ["https://book-management-app-ckj4.vercel.app"];
 app.use(
   cors({
     origin: (origin, callback) => {
