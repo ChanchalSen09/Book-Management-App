@@ -17,7 +17,14 @@ import {
   TableRow,
   Stack,
   Pagination,
+  ToggleButtonGroup,
+  ToggleButton,
+  Card,
+  CardContent,
+  CardActions,
 } from "@mui/material";
+import ViewModuleIcon from "@mui/icons-material/ViewModule";
+import ViewListIcon from "@mui/icons-material/ViewList";
 
 type Book = {
   _id: string;
@@ -36,7 +43,7 @@ const fetchBooks = async (): Promise<Book[]> => {
 export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  // Filters & search
+
   const [search, setSearch] = useState("");
   const [genreFilter, setGenreFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -44,6 +51,9 @@ export default function Dashboard() {
   // Pagination
   const [page, setPage] = useState(1);
   const pageSize = 10;
+
+  // Toggle view (list/grid)
+  const [view, setView] = useState<"list" | "grid">("list");
 
   const {
     data: books,
@@ -106,12 +116,26 @@ export default function Dashboard() {
         <Typography variant="h4" fontWeight="bold">
           Book Management
         </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => navigate("/add")}>
-          + Add Book
-        </Button>
+        <Stack direction="row" spacing={2}>
+          <ToggleButtonGroup
+            value={view}
+            exclusive
+            onChange={(_, val) => val && setView(val)}
+            size="small">
+            <ToggleButton value="list">
+              <ViewListIcon />
+            </ToggleButton>
+            <ToggleButton value="grid">
+              <ViewModuleIcon />
+            </ToggleButton>
+          </ToggleButtonGroup>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate("/add")}>
+            + Add Book
+          </Button>
+        </Stack>
       </Stack>
 
       {/* Filters */}
@@ -163,66 +187,113 @@ export default function Dashboard() {
         </TextField>
       </Stack>
 
-      {/* Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Title</TableCell>
-              <TableCell>Author</TableCell>
-              <TableCell>Genre</TableCell>
-              <TableCell>Published Year</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell align="center">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {paginatedBooks.length ? (
-              paginatedBooks.map((book) => (
-                <TableRow key={book._id}>
-                  <TableCell>{book.title}</TableCell>
-                  <TableCell>{book.author}</TableCell>
-                  <TableCell>{book.genre}</TableCell>
-                  <TableCell>{book.year}</TableCell>
-                  <TableCell>{book.status}</TableCell>
-                  <TableCell align="center">
-                    <Stack direction="row" spacing={1} justifyContent="center">
-                      <Button
-                        variant="contained"
-                        color="warning"
-                        size="small"
-                        onClick={() => navigate(`/edit/${book._id}`)}>
-                        Edit
-                      </Button>
-                      <Button
-                        variant="contained"
-                        color="error"
-                        size="small"
-                        onClick={() => {
-                          if (
-                            confirm(
-                              "Are you sure you want to delete this book?"
-                            )
-                          ) {
-                            deleteMutation.mutate(book._id);
-                          }
-                        }}>
-                        Delete
-                      </Button>
-                    </Stack>
+      {/* Conditional Rendering: List / Grid */}
+      {view === "list" ? (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Title</TableCell>
+                <TableCell>Author</TableCell>
+                <TableCell>Genre</TableCell>
+                <TableCell>Published Year</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell align="center">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginatedBooks.length ? (
+                paginatedBooks.map((book) => (
+                  <TableRow key={book._id}>
+                    <TableCell>{book.title}</TableCell>
+                    <TableCell>{book.author}</TableCell>
+                    <TableCell>{book.genre}</TableCell>
+                    <TableCell>{book.year}</TableCell>
+                    <TableCell>{book.status}</TableCell>
+                    <TableCell align="center">
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        justifyContent="center">
+                        <Button
+                          variant="contained"
+                          color="warning"
+                          size="small"
+                          onClick={() => navigate(`/edit/${book._id}`)}>
+                          Edit
+                        </Button>
+                        <Button
+                          variant="contained"
+                          color="error"
+                          size="small"
+                          onClick={() => {
+                            if (
+                              confirm(
+                                "Are you sure you want to delete this book?"
+                              )
+                            ) {
+                              deleteMutation.mutate(book._id);
+                            }
+                          }}>
+                          Delete
+                        </Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    No books found.
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  No books found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ) : (
+        <Stack
+          direction="row"
+          flexWrap="wrap"
+          gap={2}
+          justifyContent={{ xs: "center", sm: "flex-start" }}>
+          {paginatedBooks.length ? (
+            paginatedBooks.map((book) => (
+              <Card key={book._id} sx={{ width: 280 }}>
+                <CardContent>
+                  <Typography variant="h6">{book.title}</Typography>
+                  <Typography color="text.secondary">{book.author}</Typography>
+                  <Typography variant="body2">{book.genre}</Typography>
+                  <Typography variant="body2">Year: {book.year}</Typography>
+                  <Typography variant="body2">Status: {book.status}</Typography>
+                </CardContent>
+                <CardActions>
+                  <Button
+                    size="small"
+                    color="warning"
+                    onClick={() => navigate(`/edit/${book._id}`)}>
+                    Edit
+                  </Button>
+                  <Button
+                    size="small"
+                    color="error"
+                    onClick={() => {
+                      if (
+                        confirm("Are you sure you want to delete this book?")
+                      ) {
+                        deleteMutation.mutate(book._id);
+                      }
+                    }}>
+                    Delete
+                  </Button>
+                </CardActions>
+              </Card>
+            ))
+          ) : (
+            <Typography>No books found.</Typography>
+          )}
+        </Stack>
+      )}
 
       {/* Pagination */}
       <Stack spacing={2} mt={3} alignItems="center">

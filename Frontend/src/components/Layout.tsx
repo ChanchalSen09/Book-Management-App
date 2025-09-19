@@ -1,10 +1,9 @@
-import { Outlet, Link } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
-import Button from "@mui/material/Button";
 
 const Navbar = () => (
   <AppBar position="static">
@@ -12,12 +11,6 @@ const Navbar = () => (
       <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
         Book Management App
       </Typography>
-      <Button color="inherit" component={Link} to="/">
-        Dashboard
-      </Button>
-      <Button color="inherit" component={Link} to="/add">
-        Add Book
-      </Button>
     </Toolbar>
   </AppBar>
 );
