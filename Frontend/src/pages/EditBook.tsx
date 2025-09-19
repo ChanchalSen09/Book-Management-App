@@ -17,7 +17,7 @@ import { useSnackbar } from "notistack";
 import { getBookById, updateBook } from "../api/booksApi";
 import type { Book } from "../types/book";
 
-type BookFormData = Omit<Book, "_id">;
+type BookFormData = Omit<Book, "_id"> & { year: number };
 
 export default function EditBook() {
   const { bookId } = useParams<{ bookId: string }>();
@@ -39,10 +39,11 @@ export default function EditBook() {
       try {
         if (!bookId) return;
         const data = await getBookById(bookId);
-        (
-          ["title", "author", "genre", "publishedYear", "status"] as const
-        ).forEach((field) => setValue(field, data[field]));
-      } catch (error) {
+        (["title", "author", "genre", "status"] as const).forEach((field) =>
+          setValue(field, data[field])
+        );
+        setValue("year", data.year);
+      } catch {
         enqueueSnackbar("Failed to load book details.", { variant: "error" });
         navigate("/");
       } finally {
@@ -54,8 +55,11 @@ export default function EditBook() {
   }, [bookId, setValue, navigate, enqueueSnackbar]);
 
   const mutation = useMutation({
-    mutationFn: (updatedBook: BookFormData) =>
-      bookId ? updateBook(bookId, updatedBook) : Promise.reject(),
+    mutationFn: (updatedBook: BookFormData) => {
+      const bookToUpdate = { ...updatedBook, publishedYear: updatedBook.year };
+      delete (bookToUpdate as Record<string, unknown>).year;
+      return bookId ? updateBook(bookId, bookToUpdate) : Promise.reject();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["books"] });
       enqueueSnackbar("Book updated successfully!", { variant: "success" });
@@ -109,22 +113,25 @@ export default function EditBook() {
           />
           <TextField
             fullWidth
-            label="Genre"
+            label="Published Year"
+            type="number"
             margin="normal"
-            {...register("genre", { required: "Genre is required" })}
-            error={!!errors.genre}
-            helperText={errors.genre?.message}
+            {...register("year", {
+              required: "Published Year is required",
+            })}
+            error={!!errors.year}
+            helperText={errors.year?.message}
           />
           <TextField
             fullWidth
             label="Published Year"
             type="number"
             margin="normal"
-            {...register("publishedYear", {
+            {...register("year", {
               required: "Published Year is required",
             })}
-            error={!!errors.publishedYear}
-            helperText={errors.publishedYear?.message}
+            error={!!errors.year}
+            helperText={errors.year?.message}
           />
           <TextField
             select
@@ -145,8 +152,12 @@ export default function EditBook() {
           <Button
             type="submit"
             variant="contained"
-            disabled={mutation.isLoading}>
-            {mutation.isLoading ? <CircularProgress size={24} /> : "Update"}
+            disabled={mutation.status === "pending"}>
+            {mutation.status === "pending" ? (
+              <CircularProgress size={24} />
+            ) : (
+              "Update"
+            )}
           </Button>
         </DialogActions>
       </form>
