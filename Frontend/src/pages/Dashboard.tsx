@@ -26,11 +26,7 @@ import {
 import ViewModuleIcon from "@mui/icons-material/ViewModule";
 import ViewListIcon from "@mui/icons-material/ViewList";
 import { useSnackbar } from "notistack";
-
-// ✅ Centralized API
 import { getBooks, deleteBook } from "../api/booksApi";
-import type { Book } from "../types/book";
-
 export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -41,11 +37,9 @@ export default function Dashboard() {
   const [genreFilter, setGenreFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  // Pagination
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  // Toggle view (list/grid)
   const [view, setView] = useState<"list" | "grid">("list");
 
   // Fetch books
@@ -266,7 +260,7 @@ export default function Dashboard() {
                     <TableCell>{book.title}</TableCell>
                     <TableCell>{book.author}</TableCell>
                     <TableCell>{book.genre}</TableCell>
-                    <TableCell>{book.publishedYear}</TableCell>
+                    <TableCell>{book.year}</TableCell>
                     <TableCell>{book.status}</TableCell>
                     <TableCell align="center">
                       <Stack
@@ -290,7 +284,7 @@ export default function Dashboard() {
                                 "Are you sure you want to delete this book?"
                               )
                             ) {
-                              deleteMutation.mutate(book._id);
+                              if (book._id) deleteMutation.mutate(book._id);
                             }
                           }}>
                           Delete
@@ -322,9 +316,7 @@ export default function Dashboard() {
                   <Typography variant="h6">{book.title}</Typography>
                   <Typography color="text.secondary">{book.author}</Typography>
                   <Typography variant="body2">{book.genre}</Typography>
-                  <Typography variant="body2">
-                    Year: {book.publishedYear}
-                  </Typography>
+                  <Typography variant="body2">Year: {book.year}</Typography>
                   <Typography variant="body2">Status: {book.status}</Typography>
                 </CardContent>
                 <CardActions>
@@ -341,7 +333,7 @@ export default function Dashboard() {
                       if (
                         confirm("Are you sure you want to delete this book?")
                       ) {
-                        deleteMutation.mutate(book._id);
+                        if (book._id) deleteMutation.mutate(book._id);
                       }
                     }}>
                     Delete

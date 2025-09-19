@@ -23,7 +23,10 @@ import { addBook, updateBook } from "../api/booksApi";
 export default function AddBook() {
   const navigate = useNavigate();
   const location = useLocation();
-  const editBook = (location.state as any)?.book;
+  interface LocationState {
+    book?: BookFormData & { _id?: string };
+  }
+  const editBook = (location.state as LocationState)?.book;
   const { enqueueSnackbar } = useSnackbar();
 
   const {
@@ -56,6 +59,12 @@ export default function AddBook() {
   const onSubmit = async (data: BookFormData) => {
     try {
       if (editBook) {
+        if (!editBook._id) {
+          enqueueSnackbar("Book ID is missing. Cannot update book.", {
+            variant: "error",
+          });
+          return;
+        }
         await updateBook(editBook._id, data);
         enqueueSnackbar("Book updated successfully!", { variant: "success" });
       } else {
@@ -107,7 +116,7 @@ export default function AddBook() {
           {/* Year picker - year only */}
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Controller
-              name="publishedYear"
+              name="year"
               control={control}
               defaultValue={new Date().getFullYear()}
               render={({ field }) => (
@@ -122,8 +131,8 @@ export default function AddBook() {
                     textField: {
                       fullWidth: true,
                       margin: "normal",
-                      error: !!errors.publishedYear,
-                      helperText: errors.publishedYear?.message,
+                      error: !!errors.year,
+                      helperText: errors.year?.message,
                     },
                   }}
                 />
