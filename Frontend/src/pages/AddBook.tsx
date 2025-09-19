@@ -12,15 +12,13 @@ import {
   Paper,
   Box,
 } from "@mui/material";
-import api from "../api/axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSnackbar } from "notistack";
-
-// MUI DatePicker (year view)
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
+import { addBook, updateBook } from "../api/booksApi";
 
 export default function AddBook() {
   const navigate = useNavigate();
@@ -58,11 +56,11 @@ export default function AddBook() {
   const onSubmit = async (data: BookFormData) => {
     try {
       if (editBook) {
-        await api.put(`/books/${editBook._id}`, data);
-        enqueueSnackbar("Book updated", { variant: "success" });
+        await updateBook(editBook._id, data);
+        enqueueSnackbar("Book updated successfully!", { variant: "success" });
       } else {
-        await api.post("/books", data);
-        enqueueSnackbar("Book added", { variant: "success" });
+        await addBook(data);
+        enqueueSnackbar("Book added successfully!", { variant: "success" });
       }
       navigate("/");
     } catch (err) {
@@ -106,26 +104,26 @@ export default function AddBook() {
             helperText={errors.genre?.message}
           />
 
-          {/* Year picker - selects year only, value stored as number */}
+          {/* Year picker - year only */}
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Controller
-              name="year"
+              name="publishedYear"
               control={control}
-              defaultValue={editBook ? editBook.year : new Date().getFullYear()}
+              defaultValue={new Date().getFullYear()}
               render={({ field }) => (
                 <DatePicker
                   label="Published Year"
                   views={["year"]}
                   value={field.value ? dayjs(String(field.value)) : null}
-                  onChange={(newValue: Dayjs | null) => {
-                    field.onChange(newValue ? newValue.year() : null);
-                  }}
+                  onChange={(newValue: Dayjs | null) =>
+                    field.onChange(newValue ? newValue.year() : null)
+                  }
                   slotProps={{
                     textField: {
                       fullWidth: true,
                       margin: "normal",
-                      error: !!errors.year,
-                      helperText: errors.year?.message,
+                      error: !!errors.publishedYear,
+                      helperText: errors.publishedYear?.message,
                     },
                   }}
                 />

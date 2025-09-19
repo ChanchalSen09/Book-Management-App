@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import {
   Container,
   Typography,
@@ -22,28 +21,22 @@ import {
   Card,
   CardContent,
   CardActions,
+  Skeleton,
 } from "@mui/material";
 import ViewModuleIcon from "@mui/icons-material/ViewModule";
 import ViewListIcon from "@mui/icons-material/ViewList";
+import { useSnackbar } from "notistack";
 
-type Book = {
-  _id: string;
-  title: string;
-  author: string;
-  genre: string;
-  year: number;
-  status: "Available" | "Issued";
-};
-
-const fetchBooks = async (): Promise<Book[]> => {
-  const res = await axios.get("http://localhost:5000/api/books/");
-  return res.data;
-};
+// ✅ Centralized API
+import { getBooks, deleteBook } from "../api/booksApi";
+import type { Book } from "../types/book";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
 
+  // Filters & search
   const [search, setSearch] = useState("");
   const [genreFilter, setGenreFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -55,23 +48,29 @@ export default function Dashboard() {
   // Toggle view (list/grid)
   const [view, setView] = useState<"list" | "grid">("list");
 
+  // Fetch books
   const {
     data: books,
     isLoading,
     isError,
   } = useQuery({
     queryKey: ["books"],
-    queryFn: fetchBooks,
+    queryFn: getBooks,
   });
 
+  // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: string) =>
-      axios.delete(`http://localhost:5000/api/books/${id}`),
+    mutationFn: (id: string) => deleteBook(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["books"] });
+      enqueueSnackbar("Book deleted successfully!", { variant: "success" });
+    },
+    onError: () => {
+      enqueueSnackbar("Failed to delete book.", { variant: "error" });
     },
   });
 
+  // Derived data
   const filteredBooks = useMemo(() => {
     if (!books) return [];
     return books
@@ -90,12 +89,71 @@ export default function Dashboard() {
     page * pageSize
   );
 
-  if (isLoading)
+  // Skeleton Loader
+  if (isLoading) {
     return (
-      <Container sx={{ p: 4 }}>
-        <Typography variant="h6">Loading books...</Typography>
+      <Container sx={{ py: 4 }}>
+        <Typography variant="h4" fontWeight="bold" mb={3}>
+          Book Management
+        </Typography>
+
+        {view === "list" ? (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  {[
+                    "Title",
+                    "Author",
+                    "Genre",
+                    "Published Year",
+                    "Status",
+                    "Actions",
+                  ].map((col) => (
+                    <TableCell key={col}>
+                      <Skeleton variant="text" width={80} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <TableCell key={j}>
+                        <Skeleton variant="text" width="100%" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Stack
+            direction="row"
+            flexWrap="wrap"
+            gap={2}
+            justifyContent={{ xs: "center", sm: "flex-start" }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i} sx={{ width: 280 }}>
+                <CardContent>
+                  <Skeleton variant="text" width="60%" height={28} />
+                  <Skeleton variant="text" width="40%" />
+                  <Skeleton variant="text" width="50%" />
+                  <Skeleton variant="text" width="30%" />
+                </CardContent>
+                <CardActions>
+                  <Skeleton variant="rectangular" width={60} height={30} />
+                  <Skeleton variant="rectangular" width={60} height={30} />
+                </CardActions>
+              </Card>
+            ))}
+          </Stack>
+        )}
       </Container>
     );
+  }
 
   if (isError)
     return (
@@ -165,7 +223,7 @@ export default function Dashboard() {
           }}
           sx={{ minWidth: 150 }}>
           <MenuItem value="">All Genres</MenuItem>
-          {[...new Set(books.map((b) => b.genre))].map((genre) => (
+          {[...new Set(books?.map((b) => b.genre))].map((genre) => (
             <MenuItem key={genre} value={genre}>
               {genre}
             </MenuItem>
@@ -208,7 +266,7 @@ export default function Dashboard() {
                     <TableCell>{book.title}</TableCell>
                     <TableCell>{book.author}</TableCell>
                     <TableCell>{book.genre}</TableCell>
-                    <TableCell>{book.year}</TableCell>
+                    <TableCell>{book.publishedYear}</TableCell>
                     <TableCell>{book.status}</TableCell>
                     <TableCell align="center">
                       <Stack
@@ -264,7 +322,9 @@ export default function Dashboard() {
                   <Typography variant="h6">{book.title}</Typography>
                   <Typography color="text.secondary">{book.author}</Typography>
                   <Typography variant="body2">{book.genre}</Typography>
-                  <Typography variant="body2">Year: {book.year}</Typography>
+                  <Typography variant="body2">
+                    Year: {book.publishedYear}
+                  </Typography>
                   <Typography variant="body2">Status: {book.status}</Typography>
                 </CardContent>
                 <CardActions>
@@ -290,7 +350,9 @@ export default function Dashboard() {
               </Card>
             ))
           ) : (
-            <Typography>No books found.</Typography>
+            <Paper sx={{ p: 4, textAlign: "center", width: "100%" }}>
+              <Typography>No books found.</Typography>
+            </Paper>
           )}
         </Stack>
       )}
