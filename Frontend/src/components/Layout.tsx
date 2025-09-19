@@ -20,7 +20,7 @@ const AppFooter = () => (
     component="footer"
     sx={{ bgcolor: "background.paper", py: 2, mt: 4, textAlign: "center" }}>
     <Typography variant="body2" color="text.secondary">
-      &copy; {new Date().getFullYear()} Book Management App
+      Developed by Chanchal for Letest AI
     </Typography>
   </Box>
 );

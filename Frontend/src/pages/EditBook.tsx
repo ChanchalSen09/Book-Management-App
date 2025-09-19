@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
 import {
   Dialog,
   DialogTitle,
@@ -10,27 +9,22 @@ import {
   MenuItem,
   Button,
   CircularProgress,
+  Box,
 } from "@mui/material";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSnackbar } from "notistack"; // ✅ Import Notistack
+import { useSnackbar } from "notistack";
+import { getBookById, updateBook } from "../api/booksApi";
+import type { Book } from "../types/book";
 
-type Book = {
-  _id: string;
-  title: string;
-  author: string;
-  genre: string;
-  publishedYear: number;
-  status: "Available" | "Issued";
-};
+type BookFormData = Omit<Book, "_id">;
 
 export default function EditBook() {
-  const { bookId } = useParams();
+  const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { enqueueSnackbar } = useSnackbar(); // ✅ Initialize snackbar
+  const { enqueueSnackbar } = useSnackbar();
 
-  const [book, setBook] = useState<Book | null>(null);
   const [loadingBook, setLoadingBook] = useState(true);
 
   const {
@@ -38,49 +32,41 @@ export default function EditBook() {
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<Book>();
+  } = useForm<BookFormData>();
 
-  // Fetch the book data
   useEffect(() => {
     const fetchBook = async () => {
       try {
-        const response = await axios.get(
-          `http://localhost:5000/api/books/${bookId}`
-        );
-        setBook(response.data);
-        const fields: (keyof Book)[] = [
-          "title",
-          "author",
-          "genre",
-          "publishedYear",
-          "status",
-        ];
-        fields.forEach((field) => setValue(field, response.data[field]));
+        if (!bookId) return;
+        const data = await getBookById(bookId);
+        (
+          ["title", "author", "genre", "publishedYear", "status"] as const
+        ).forEach((field) => setValue(field, data[field]));
       } catch (error) {
-        enqueueSnackbar("Failed to load book details.", { variant: "error" }); // ❌ Error toast
+        enqueueSnackbar("Failed to load book details.", { variant: "error" });
         navigate("/");
       } finally {
         setLoadingBook(false);
       }
     };
 
-    if (bookId) fetchBook();
+    fetchBook();
   }, [bookId, setValue, navigate, enqueueSnackbar]);
 
   const mutation = useMutation({
-    mutationFn: (updatedBook: Book) =>
-      axios.put(`http://localhost:5000/api/books/${bookId}`, updatedBook),
+    mutationFn: (updatedBook: BookFormData) =>
+      bookId ? updateBook(bookId, updatedBook) : Promise.reject(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["books"] });
-      enqueueSnackbar("Book updated successfully!", { variant: "success" }); // ✅ Success toast
+      enqueueSnackbar("Book updated successfully!", { variant: "success" });
       navigate("/");
     },
     onError: () => {
-      enqueueSnackbar("Failed to update book.", { variant: "error" }); // ❌ Error toast
+      enqueueSnackbar("Failed to update book.", { variant: "error" });
     },
   });
 
-  const onSubmit = (data: Book) => {
+  const onSubmit = (data: BookFormData) => {
     mutation.mutate(data);
   };
 
@@ -88,7 +74,17 @@ export default function EditBook() {
     navigate("/");
   };
 
-  if (loadingBook) return <div>Loading book details...</div>;
+  if (loadingBook) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="50vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Dialog open maxWidth="sm" fullWidth>
